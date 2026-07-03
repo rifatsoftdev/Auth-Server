@@ -37,7 +37,7 @@ jobs:
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_KEY }}
           script: |
-            cd DTing_Server/
+            cd /opt/dting/Auth-Server/
             git pull origin main
 
             if [ ! -f .env ]; then

@@ -30,7 +30,7 @@ from app.router.notify_router import notyfy_router
 from app.router.offer_router import offer_router
 from app.router.seo_router import seo_router
 from app.router.service_router import service_router
-from app.router.template_router import template_router
+# from app.router.template_router import template_router
 from app.router.settings_router import settings_router
 from app.router.tfa_router import tfa_router
 from app.router.me_router import me_router
@@ -161,25 +161,7 @@ async def root(
     request: Request,
     authorization: str = Header(None)
 ):
-    access_token = request.cookies.get("access_token")
-    
-    if access_token:
-        db: Session = SessionLocal()
-        try:
-            userVerificationService = UserVerificationService(
-                db=db,
-                authorization=f"Bearer {access_token}"
-            )
-            user = userVerificationService.verify_user_authorization()
-            if user:
-                return RedirectResponse("/account")
-        except Exception:
-            pass
-        finally:
-            db.close()
-    
-    return templates.TemplateResponse("server/index.html", {"request": request})
-
+    return RedirectResponse("/health")
 
 
 
@@ -301,7 +283,7 @@ app.include_router(notyfy_router, prefix="/ws", tags=["Notifications"])
 app.include_router(offer_router, prefix="/offer", tags=["Offers"])
 app.include_router(seo_router)
 app.include_router(service_router, prefix="/service", tags=["Services"])
-app.include_router(template_router, prefix="", tags=["Templates"])
+# app.include_router(template_router, prefix="", tags=["Templates"])
 app.include_router(settings_router, prefix="/admin/settings", tags=["Admin Settings"])
 app.include_router(tfa_router, prefix="/tfa", tags=["Two-Factor Authentication"])
 app.include_router(me_router, prefix="/me", tags=["User Data"])
