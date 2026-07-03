@@ -2,11 +2,11 @@ version: '3.8'
 
 services:
   app:
-    image: rifatsoftdev/dting-server
+    image: rifatsoftdev/dting-auth
     build: .
     env_file:
       - .env
-    container_name: dting-server
+    container_name: dting-auth
     stdin_open: true
     tty: true
     ports:
