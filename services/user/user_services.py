@@ -264,6 +264,35 @@ class UserServices:
         db.commit()
 
 
+    def get_header_data(self) -> GlobalResponse:
+        try:
+            user: UserTable = self.request.state.current_user
+            
+            return GlobalResponse(
+                status_code=status.HTTP_200_OK,
+                success=True,
+                action="header_fetched",
+                message="Header fetched successfully",
+                data={
+                    "header_data": {
+                        "user_id": user.user_id,
+                        "full_name": user.full_name,
+                        "username": user.username,
+                        "avatar_url": user.profile_image_url,
+                        "notification_count": 0
+                    }
+                },
+                next_step={}
+            )
+        
+        except HTTPException:
+            raise
+
+        except Exception as e:
+            print(f"{AnsiColor.RED}INFO{AnsiColor.RESET}:     {e}")
+            raise HTTPException(status_code=500, detail=String.SERVER_ERROR)
+
+    
     # a function of get user profile information
     def get_profile(self) -> GlobalResponse:
         try:

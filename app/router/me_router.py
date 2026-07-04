@@ -19,6 +19,27 @@ me_router = APIRouter()
 
 # ==============================================================================
 
+@me_router.get("/header", response_model=GlobalResponse)
+async def profile(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
+    userServices = UserServices(
+        db=db,
+        background_tasks=background_tasks,
+        request=request,
+        authorization=authorization
+    )
+
+    return userServices.get_header_data()
+
+
+
+
+# ==============================================================================
+
 @me_router.get("/profile", response_model=GlobalResponse)
 async def profile(
     request: Request,
@@ -34,7 +55,6 @@ async def profile(
     )
 
     return userServices.get_profile()
-    
 
 
 
