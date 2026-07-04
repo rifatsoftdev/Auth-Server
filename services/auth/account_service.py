@@ -157,14 +157,22 @@ class AccountServices(OTPService, SigninService):
     ) -> GlobalResponse:
         try:
             # Step 1: Extract data from payload
-            refresh_token = (
-                self.authorization
-                or self.request.cookies.get("refresh_token")
-                or payload.refresh_token
-            )
+            refresh_token = self.authorization
+
+            if not refresh_token and payload is not None:
+                refresh_token = payload.refresh_token
+
+            if not refresh_token and self.request.cookies.get("refresh_token") is not None:
+                refresh_token = self.request.cookies.get("refresh_token")
             
             if refresh_token and refresh_token.lower().startswith("bearer "):
                 refresh_token = refresh_token.split(" ", 1)[1].strip()
+            
+            if not refresh_token:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail=String.INVALID_OR_EXPIRED_TOKEN
+                )
 
             # Step 2: Decode and validate refresh token
             token_payload: dict = self._decode_token(refresh_token)

@@ -1,4 +1,4 @@
-from fastapi import status, Request, BackgroundTasks
+from fastapi import status, Request, BackgroundTasks, Header, HTTPException
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from sqlalchemy.orm import Session
@@ -9,7 +9,8 @@ from app.model import UserTable
 from app.schema import GlobalResponse
 from services.auth.user_verification import UserVerificationService
 
-class AuthMiddleware(BaseHTTPMiddleware):
+
+class UserAuthMiddleware(BaseHTTPMiddleware):
     def __init__(
         self,
         app,
@@ -70,7 +71,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         if not access_token:
             print(f"{AnsiColor.BLUE}INFO:{AnsiColor.RESET}     Missing token. client={client_type} path={request.url.path}")
-            return self._unauthorized("Missing authentication token")
+            return self._unauthorized(request, "Missing authentication token")
 
         # 4. Token verify koro
         db: Session = SessionLocal()
@@ -91,7 +92,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         except Exception as exc:
             status_code = getattr(exc, "status_code", status.HTTP_401_UNAUTHORIZED)
             detail = getattr(exc, "detail", "Invalid or Expired Token")
-            return self._unauthorized(detail, status_code=status_code)
+            return self._unauthorized(request, detail, status_code=status_code)
         finally:
             pass
             # db.close()
@@ -104,7 +105,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
     def _is_public_path(self, path: str) -> bool:
         return path in self.public_paths
 
-    def _unauthorized(self, message: str, status_code: int = 401) -> JSONResponse:
+    def _unauthorized(self, request: Request, message: str, status_code: int = 401):
         response = GlobalResponse(
             status_code=status_code,
             success=False,
@@ -112,10 +113,20 @@ class AuthMiddleware(BaseHTTPMiddleware):
             message=message,
             data={}
         )
-        return JSONResponse(status_code=status_code, content=response.model_dump())
 
+        resp = JSONResponse(
+            status_code=status_code,
+            content=response.model_dump()
+        )
 
+        origin = request.headers.get("origin")
 
+        if origin in [
+            "http://localhost:4321",
+            "http://192.168.1.100:4321",
+        ]:
+            resp.headers["Access-Control-Allow-Origin"] = origin
+            resp.headers["Access-Control-Allow-Credentials"] = "true"
+            resp.headers["Vary"] = "Origin"
 
-# ==============================================================================
-# ==============================================================================
+        return resp

@@ -1,4 +1,5 @@
-from app.middleware.user_auth_middleware import AuthMiddleware
+from app.middleware.user_auth_middleware import UserAuthMiddleware
+from app.middleware.admin_auth_middleware import AdminAuthMiddleware
 
 
-__all__ = ["AuthMiddleware"]
+__all__ = ["UserAuthMiddleware", "AdminAuthMiddleware"]

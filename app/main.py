@@ -12,8 +12,7 @@ from fastapi.testclient import TestClient
 from app.core.database import SessionLocal
 from app.constants import ENV, AnsiColor
 from app.schema.global_schema import GlobalResponse
-from app.middleware.user_auth_middleware import AuthMiddleware
-from app.middleware.admin_auth_middleware import AdminAuthMiddleware
+from app.middleware import UserAuthMiddleware, AdminAuthMiddleware
 from sqlalchemy.orm import Session
 from services.auth.user_verification import UserVerificationService
 
@@ -53,7 +52,11 @@ app = FastAPI(
 # Configure CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"^https://([a-zA-Z0-9-]+\.)*dting\.online$",
+    allow_origins=[
+        "http://localhost:4321",
+        "http://192.168.1.100:4321",
+    ],
+    # allow_origin_regex=r"^https://([a-zA-Z0-9-]+\.)*dting\.online$",
     allow_credentials=True,
     allow_methods=["*"],  # Allows all methods
     allow_headers=["*"],  # Allows all headers
@@ -73,7 +76,7 @@ app.add_middleware(
 )
 
 app.add_middleware(
-    AuthMiddleware,
+    UserAuthMiddleware,
     public_paths=[
         "/health",
         "/country/counties",
@@ -201,64 +204,6 @@ async def public_key(request: Request):
     
     return FileResponse(public_key_path)
     
-
-
-# ==============================================================================
-
-@app.get("/test")
-async def root(
-    request: Request,
-    authorization: str = Header(None)
-):
-    from services.notification.email_manager import EmailManager
-
-    emailManager = EmailManager()
-    emailManager.send_email(
-        email_address="example@gmail.com",
-        subject="Test Email",
-        body="This is a test email from DTing API"
-    )
-
-    return {}
-    user_id="USRF35338A5F7704BF0A0990B8A341D023D"
-
-    notifyWebSocket = NotifyWebSocket()
-    # print(await notifyWebSocket._is_online_user(user_id))
-
-    await notifyWebSocket.send_notification(
-        user_id="USRF35338A5F7704BF0A0990B8A341D023D",
-        title="Test Notification",
-        body="This is a test notification from DTing API",
-        payload = {
-            "notification_id": "uuid-123",
-            "type": "test",
-            "title": "Test Notification",
-            "body": "This is a test notification from PocketPay API",
-
-            "user_id": "USRF35338A5F7704BF0A0990B8A341D023D",
-
-            "priority": "normal",
-            "created_at": "2024-06-30T12:00:00Z",
-
-            "action": {
-                "type": "open_url",
-                "target": "https://example.com/notification-action"
-            },
-
-            "deep_link": "pocketpay://test",
-
-            "image": "https://example.com/notification-image.png",
-
-            "category": "test",
-
-            "meta": {
-                "timestamp": "2024-06-30T12:00:00Z"
-            }
-        }
-    )
-
-    return {}
-
 
 
 
