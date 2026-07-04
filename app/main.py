@@ -53,7 +53,7 @@ app = FastAPI(
 # Configure CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ENV.ALLOWED_ORIGINS,  # Allows all origins
+    allow_origin_regex=r"^https://([a-zA-Z0-9-]+\.)*dting\.online$",
     allow_credentials=True,
     allow_methods=["*"],  # Allows all methods
     allow_headers=["*"],  # Allows all headers

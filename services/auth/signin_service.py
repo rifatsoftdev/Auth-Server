@@ -321,9 +321,9 @@ class SigninService(TokenGenerators, Repository):
                     key="access_token",
                     value=access_token,
                     httponly=True,
-                    secure=False,  # production হলে True + HTTPS
+                    secure=True,  # production হলে True + HTTPS
                     samesite="lax",
-                    domain=None if ENV.DEBUG  else f".{ENV.MAIN_DOMAIN}",
+                    domain=ENV.MAIN_DOMAIN,
                     max_age=ENV.ACCESS_EXPIRE * 60,
                     path="/"
                 )
@@ -331,9 +331,9 @@ class SigninService(TokenGenerators, Repository):
                     key="refresh_token",
                     value=refresh_token,
                     httponly=True,
-                    secure=False,
+                    secure=True,
                     samesite="strict",
-                    domain=None if ENV.DEBUG  else f".{ENV.MAIN_DOMAIN}",            # fix: subdomain shobgulote share korar jonno
+                    domain=ENV.MAIN_DOMAIN,
                     max_age=ENV.REFRESH_EXPIRE_DAYS * 86400, # fix: din -> second e convert kora (1 din = 86400 sec)
                     path="/auth/refresh-access-token"
                 )
