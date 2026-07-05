@@ -2,6 +2,11 @@ import smtplib
 
 from email.mime.text import MIMEText
 from app.constants import ENV, AnsiColor
+from fastapi import Depends
+from sqlalchemy.orm import Session
+from app.core.database import SessionLocal, get_db
+
+from services.configurations.configurations_services import ConfigurationsServices
 
 
 
@@ -15,6 +20,20 @@ class EmailManager:
         self.email_use_ssl = ENV.EMAIL_USE_SSL
 
     def send_email(self, email_address: str, subject: str, body: str) -> bool:
+        # Check if email sending is enabled in the configuration
+        db: Session = Depends(get_db)
+        configurationsServices = ConfigurationsServices(
+            db=db,
+            background_tasks=None,
+            request=None,
+            authorization=None
+        )
+
+        if not configurationsServices.get_email_settings()["enabled"]:
+            print(f"{AnsiColor.RED}ERROR:{AnsiColor.RESET}    Email sending is disabled for {email_address}")
+            return False
+        
+        
         msg = MIMEText(body, 'html')
 
         msg['Subject'] = subject

@@ -2,14 +2,14 @@ import os
 
 from pathlib import Path
 
-from fastapi import FastAPI, Header, Request, HTTPException, status
+from fastapi import FastAPI, Header, Request, HTTPException, status, BackgroundTasks, Response, Body, Depends
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.testclient import TestClient
 
-from app.core.database import SessionLocal
+from app.core.database import SessionLocal, get_db
 from app.constants import ENV, AnsiColor
 from app.schema.global_schema import GlobalResponse
 from app.middleware import UserAuthMiddleware, AdminAuthMiddleware
@@ -36,6 +36,7 @@ from app.router.me_router import me_router
 
 from services.setup.setup_services import SetupServices
 from services.notification.websocket_push_manager import NotifyWebSocket
+from services.configurations.configurations_services import ConfigurationsServices
 import app.core.firebase
 
 
@@ -53,10 +54,9 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:4321",
-        "http://192.168.1.100:4321",
+        "https://dting.online",
     ],
-    # allow_origin_regex=r"^https://([a-zA-Z0-9-]+\.)*dting\.online$",
+    allow_origin_regex=r"^https://([a-zA-Z0-9-]+\.)*dting\.online$",
     allow_credentials=True,
     allow_methods=["*"],  # Allows all methods
     allow_headers=["*"],  # Allows all headers
@@ -205,6 +205,24 @@ async def public_key(request: Request):
     return FileResponse(public_key_path)
     
 
+
+@app.get("/test")
+async def test(
+    request: Request,
+    response: Response,
+    background_tasks: BackgroundTasks,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
+    configurationsServices = ConfigurationsServices(
+        db=db,
+        background_tasks=background_tasks,
+        request=request,
+        authorization=authorization
+    )
+    print(type(configurationsServices.get_email_settings()["enabled"]))
+    
+    return {"message": "Test endpoint"}
 
 
 @app.get("/favicon.ico", include_in_schema=False)

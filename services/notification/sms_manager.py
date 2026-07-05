@@ -1,6 +1,10 @@
 from twilio.rest import Client
+from fastapi import Depends
+from sqlalchemy.orm import Session
+from app.core.database import SessionLocal, get_db
 
 from app.constants import ENV, AnsiColor
+from services.configurations.configurations_services import ConfigurationsServices
 
 
 
@@ -12,6 +16,20 @@ class SMSManager:
         self.twilio_phone_number = ENV.TWILIO_PHONE_NUMBER
 
     def __send_with_twilio(self, phone_number: str, body: str) -> bool:
+        # Check if email sending is enabled in the configuration
+        db: Session = Depends(get_db)
+        configurationsServices = ConfigurationsServices(
+            db=db,
+            background_tasks=None,
+            request=None,
+            authorization=None
+        )
+
+        if not configurationsServices.get_sms_settings()["enabled"]:
+            print(f"{AnsiColor.RED}ERROR:{AnsiColor.RESET}    SMS sending is disabled for {phone_number}")
+            return False
+        
+
         try:
             if not self.account_sid or not self.auth_token or not self.twilio_phone_number:
                 print(f"{AnsiColor.RED}ERROR:{AnsiColor.RESET}    Twilio SMS configuration is incomplete")
