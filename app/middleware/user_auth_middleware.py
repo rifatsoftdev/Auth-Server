@@ -77,7 +77,7 @@ class UserAuthMiddleware(BaseHTTPMiddleware):
         if not access_token and self.dev_mode:
             # Query param diyeo token nite paro dev e
             access_token = request.query_params.get("token")
-
+        
         if not access_token:
             print(f"{AnsiColor.BLUE}INFO:{AnsiColor.RESET}     Missing token. client={client_type} path={request.url.path}")
             return self._unauthorized(request, "Missing authentication token")
@@ -85,7 +85,7 @@ class UserAuthMiddleware(BaseHTTPMiddleware):
         # 4. Token verify koro
         db: Session = SessionLocal()
         background_tasks: BackgroundTasks = BackgroundTasks()
-
+        
         try:
             userVerificationService = UserVerificationService(
                 db=db,

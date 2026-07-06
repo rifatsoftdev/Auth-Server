@@ -141,13 +141,12 @@ class TokenService(TokenGenerators):
 
     def verify_access_token(self, token: str) -> dict | None:
         if not token:
-            print(1)
             return None
         
         payload = self._decode_token(
             token,
-            audience=None,
-            issuer=f"api.auth{ENV.MAIN_DOMAIN}" if ENV.DEBUG else None,
+            audience=ENV.MAIN_DOMAIN,
+            issuer=f"api.auth{ENV.MAIN_DOMAIN}",
         )
         
         if payload and payload.get("token_type") == "access":
@@ -158,7 +157,7 @@ class TokenService(TokenGenerators):
     def verify_refresh_token(self, token: str) -> dict | None:
         payload = self._decode_token(
             token,
-            audience=None,
+            audience=f"api.auth{ENV.MAIN_DOMAIN}",
             issuer=f"api.auth{ENV.MAIN_DOMAIN}" if ENV.DEBUG else None,
         )
 
@@ -239,7 +238,7 @@ class TokenService(TokenGenerators):
 
 
             # Step 4: Generate new access token
-            access_token, _ = self.create_access_token(
+            access_token = self.create_access_token(
                 user_id=user_id,
                 device_id=device_id,
                 device_uuid=device_uuid

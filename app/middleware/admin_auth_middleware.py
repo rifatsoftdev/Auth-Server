@@ -1,3 +1,5 @@
+import re
+
 from fastapi import BackgroundTasks, Request, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
@@ -8,6 +10,12 @@ from app.core.database import SessionLocal
 from app.model import AdminTable
 from app.schema import GlobalResponse
 from services.auth.user_verification import UserVerificationService
+
+
+
+ORIGIN_REGEX = re.compile(
+    r"^https://([a-zA-Z0-9-]+\.)*dting\.online$"
+)
 
 
 class AdminAuthMiddleware(BaseHTTPMiddleware):
@@ -62,7 +70,7 @@ class AdminAuthMiddleware(BaseHTTPMiddleware):
 
         if not access_token:
             print(f"{AnsiColor.BLUE}INFO:{AnsiColor.RESET}     Missing admin token. client={client_type} path={request.url.path}")
-            return self._unauthorized("Missing admin authentication token")
+            return self._unauthorized(request=request, message="Missing admin authentication token")
 
         db: Session = SessionLocal()
         background_tasks = BackgroundTasks()
@@ -80,7 +88,7 @@ class AdminAuthMiddleware(BaseHTTPMiddleware):
         except Exception as exc:
             status_code = getattr(exc, "status_code", status.HTTP_401_UNAUTHORIZED)
             detail = getattr(exc, "detail", "Invalid or Expired Admin Token")
-            return self._unauthorized(detail, status_code=status_code)
+            return self._unauthorized(request=request, message=detail, status_code=status_code)
 
         finally:
             pass
@@ -94,12 +102,25 @@ class AdminAuthMiddleware(BaseHTTPMiddleware):
     def _is_public_path(self, path: str) -> bool:
         return path in self.public_paths
 
-    def _unauthorized(self, message: str, status_code: int = 401) -> JSONResponse:
+    def _unauthorized(self, request: Request, message: str, status_code: int = 401):
         response = GlobalResponse(
             status_code=status_code,
             success=False,
-            action="admin_unauthorized",
+            action="unauthorized",
             message=message,
             data={}
         )
-        return JSONResponse(status_code=status_code, content=response.model_dump())
+
+        resp = JSONResponse(
+            status_code=status_code,
+            content=response.model_dump()
+        )
+
+        origin = request.headers.get("origin")
+
+        if origin and ORIGIN_REGEX.fullmatch(origin):
+            resp.headers["Access-Control-Allow-Origin"] = origin
+            resp.headers["Access-Control-Allow-Credentials"] = "true"
+            resp.headers["Vary"] = "Origin"
+
+        return resp

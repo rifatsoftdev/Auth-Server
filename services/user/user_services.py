@@ -267,6 +267,7 @@ class UserServices:
     def get_header_data(self) -> GlobalResponse:
         try:
             user: UserTable = self.request.state.current_user
+            print(0)
             
             return GlobalResponse(
                 status_code=status.HTTP_200_OK,

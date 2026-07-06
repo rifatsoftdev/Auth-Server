@@ -32,11 +32,7 @@ class SigninService(TokenService, Repository):
         request: Request,
         authorization: str = Header(None)
     ):
-        self.db = db
-        self.background_tasks = background_tasks
-        self.request = request
-        self.authorization = authorization
-        TokenGenerators.__init__(self)
+        super().__init__(db=db, background_tasks=background_tasks, request=request, authorization=authorization)
 
     def _masked_tfa_destination(self, method_type: str, method: TwoFactorTable, user: UserTable) -> str | None:
         delivery_address = method.delivery_address

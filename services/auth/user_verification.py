@@ -66,8 +66,8 @@ class UserVerificationService(TokenService, Repository):
             # Step 2: Decode and validate token
             payload: dict = self._decode_token(
                 self.__bearer_2_token(self.authorization),
-                audience=ENV.ALLOWED_AUDIENCES,
-                issuer=f"auth.{ENV.MAIN_DOMAIN}"
+                audience=ENV.MAIN_DOMAIN,
+                issuer=f"api.auth{ENV.MAIN_DOMAIN}"
             )
 
             if not payload:
@@ -178,14 +178,14 @@ class UserVerificationService(TokenService, Repository):
             # Step 2: Decode and validate token
             payload: dict = self._decode_token(
                 self.__bearer_2_token(self.authorization),
-                audience=ENV.ALLOWED_AUDIENCES,
-                issuer=f"auth.{ENV.MAIN_DOMAIN}"
+                audience=ENV.MAIN_DOMAIN,
+                issuer=f"api.auth.{ENV.MAIN_DOMAIN}"
             )
 
             if not payload:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail=String.INVALID_TOKEN
+                    detail=String.INVALID_OR_EXPIRED_TOKEN
                 )
 
             if (payload.get("token_type") != "access"):

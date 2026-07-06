@@ -552,8 +552,8 @@ class OTPService(TokenGenerators):
                     "email_address": user.email_address,
                     "device_id": device_id,
                     "device_uuid": device_uuid,
-                    "iss": f"auth.{ENV.MAIN_DOMAIN}",
-                    # "aud": ENV.ALLOWED_AUDIENCES,
+                    "iss": f"api.auth{ENV.MAIN_DOMAIN}",
+                    "aud": ENV.MAIN_DOMAIN,
                 }
             )
 
