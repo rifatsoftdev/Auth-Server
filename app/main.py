@@ -214,13 +214,15 @@ async def test(
     authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
-    configurationsServices = ConfigurationsServices(
-        db=db,
-        background_tasks=background_tasks,
-        request=request,
-        authorization=authorization
-    )
-    print(type(configurationsServices.get_email_settings()["enabled"]))
+    # configurationsServices = ConfigurationsServices(
+    #     db=db,
+    #     background_tasks=background_tasks,
+    #     request=request,
+    #     authorization=authorization
+    # )
+    # print(type(configurationsServices.get_email_settings()["enabled"]))
+
+    print(f"api.auth{ENV.MAIN_DOMAIN}")
     
     return {"message": "Test endpoint"}
 

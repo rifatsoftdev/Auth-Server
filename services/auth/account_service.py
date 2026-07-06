@@ -149,63 +149,6 @@ class AccountServices(OTPService, SigninService):
             raise HTTPException(status_code=500, detail=String.SERVER_ERROR)
 
 
-    # FCM token receive from user
-    def receive_fcm_token(self, payload: FCMTokenRequest) -> GlobalResponse:
-        try:
-            # Step 1: Extract data from payload
-            user_id: str = payload.user_id
-            access_token: str = payload.access_token
-            device_id: str = payload.device_id
-            device_uuid: str = payload.device_uuid
-            fcm_token: str = payload.fcm_token
-            
-
-            # Step 1: Get current user
-            user: UserTable = self.request.state.current_user
-
-
-            # Step 3: Update current session FCM token
-            user_sessions: list[SessionTable] = user.sessions
-            current_session = next(
-                (
-                    session for session in user_sessions
-                    if session.device_id == device_id
-                    and session.device_uuid == device_uuid
-                    and session.is_login
-                ),
-                None
-            )
-
-            if not current_session:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail=String.SESSION_NOT_FOUND
-                )
-
-            current_session.fcm_token = fcm_token
-            self.db.commit()
-            self.db.refresh(current_session)
-            
-
-            # Step 4: Return Response
-            return GlobalResponse(
-                status_code=status.HTTP_200_OK,
-                success=True,
-                action="receive_fcm_token",
-                message="FCM token received successfully",
-                data={},
-                next_step={}
-            )
-        
-        except HTTPException:
-            raise
-
-        except Exception as e:
-            self.db.rollback()
-            print(f"{AnsiColor.RED}INFO{AnsiColor.RESET}:     {e}")
-            raise HTTPException(status_code=500, detail=String.SERVER_ERROR)
-
-
     # User Account Delete Request
     def delete_account(self, payload: DeleteAccountRequest) -> GlobalResponse:
         try:

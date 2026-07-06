@@ -6,7 +6,7 @@ from jose import JWTError, jwt
 
 from app.constants import ENV, String, AnsiColor
 from app.schema import RefreshAccessTokenRequest, GlobalResponse, FCMTokenRequest
-from app.model import SessionTable
+from app.model import SessionTable, UserTable
 from app.utils import Hashing
 
 
@@ -111,8 +111,8 @@ class TokenService(TokenGenerators):
             "user_id": user_id,
             "device_id": device_id,
             "device_uuid": device_uuid,
-            "iss": f"auth.{ENV.MAIN_DOMAIN}",
-            # "aud": ENV.ALLOWED_AUDIENCES,        # access token -> সব authorized service e valid
+            "iss": f"api.auth{ENV.MAIN_DOMAIN}",
+            "aud": ENV.MAIN_DOMAIN,
             "iat": datetime.utcnow(),
         }
         token, jti = self._create_token(
@@ -128,27 +128,14 @@ class TokenService(TokenGenerators):
             "user_id": user_id,
             "device_id": device_id,
             "device_uuid": device_uuid,
-            "iss": f"auth.{ENV.MAIN_DOMAIN}",
-            "aud": f"auth.{ENV.MAIN_DOMAIN}",
+            "iss": f"api.auth{ENV.MAIN_DOMAIN}",
+            "aud": f"api.auth{ENV.MAIN_DOMAIN}",
             "iat": datetime.utcnow(),
         }
         token, jti = self._create_token(
             payload=payload,
             expire_day=ENV.REFRESH_EXPIRE_DAYS
         )
-
-        # ---- DB e session record save kora (revoke/rotation er jonno) ----
-        # session = SessionTable(
-        #     user_id=user_id,
-        #     device_id=device_id,
-        #     device_uuid=device_uuid,
-        #     jti=jti,
-        #     refresh_token_hash=Hashing.hash(token),   # raw token DB e direct save na kore hash rakha better
-        #     expires_at=datetime.utcnow() + timedelta(days=ENV.REFRESH_EXPIRE_DAYS),
-        #     is_revoked=False,
-        # )
-        # self.db.add(session)
-        # self.db.commit()
 
         return token
 
@@ -159,8 +146,8 @@ class TokenService(TokenGenerators):
         
         payload = self._decode_token(
             token,
-            audience=ENV.ALLOWED_AUDIENCES if ENV.DEBUG else None,
-            issuer=f"auth.{ENV.MAIN_DOMAIN}" if ENV.DEBUG else None,
+            audience=None,
+            issuer=f"api.auth{ENV.MAIN_DOMAIN}" if ENV.DEBUG else None,
         )
         
         if payload and payload.get("token_type") == "access":
@@ -171,21 +158,12 @@ class TokenService(TokenGenerators):
     def verify_refresh_token(self, token: str) -> dict | None:
         payload = self._decode_token(
             token,
-            audience=f"auth.{ENV.MAIN_DOMAIN}" if ENV.DEBUG else None,
-            issuer=f"auth.{ENV.MAIN_DOMAIN}" if ENV.DEBUG else None,
+            audience=None,
+            issuer=f"api.auth{ENV.MAIN_DOMAIN}" if ENV.DEBUG else None,
         )
 
         if not payload or payload.get("token_type") != "refresh":
             return None
-
-        # ---- DB e check kora -> revoked hoyeche ki na ----
-        # session = (
-        #     self.db.query(SessionTable)
-        #     .filter(SessionTable.jti == payload.get("jti"), SessionTable.is_revoked == False)
-        #     .first()
-        # )
-        # if not session:
-        #     return None  # revoked othoba kothao pawa jay nai
 
         return payload
 
@@ -313,6 +291,62 @@ class TokenService(TokenGenerators):
             print(f"{AnsiColor.RED}INFO{AnsiColor.RESET}:     {e}")
             raise HTTPException(status_code=500, detail=String.SERVER_ERROR)
     
+    # FCM token receive from user
+    def receive_fcm_token(self, payload: FCMTokenRequest) -> GlobalResponse:
+        try:
+            # Step 1: Extract data from payload
+            user_id: str = payload.user_id
+            access_token: str = payload.access_token
+            device_id: str = payload.device_id
+            device_uuid: str = payload.device_uuid
+            fcm_token: str = payload.fcm_token
+            
+
+            # Step 1: Get current user
+            user: UserTable = self.request.state.current_user
+
+
+            # Step 3: Update current session FCM token
+            user_sessions: list[SessionTable] = user.sessions
+            current_session = next(
+                (
+                    session for session in user_sessions
+                    if session.device_id == device_id
+                    and session.device_uuid == device_uuid
+                    and session.is_login
+                ),
+                None
+            )
+
+            if not current_session:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail=String.SESSION_NOT_FOUND
+                )
+
+            current_session.fcm_token = fcm_token
+            self.db.commit()
+            self.db.refresh(current_session)
+            
+
+            # Step 4: Return Response
+            return GlobalResponse(
+                status_code=status.HTTP_200_OK,
+                success=True,
+                action="receive_fcm_token",
+                message="FCM token received successfully",
+                data={},
+                next_step={}
+            )
+        
+        except HTTPException:
+            raise
+
+        except Exception as e:
+            self.db.rollback()
+            print(f"{AnsiColor.RED}INFO{AnsiColor.RESET}:     {e}")
+            raise HTTPException(status_code=500, detail=String.SERVER_ERROR)
+
 
 
 

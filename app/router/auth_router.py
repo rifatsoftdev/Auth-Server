@@ -248,14 +248,14 @@ async def receive_fcm_token(
     authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
-    accountServices = AccountServices(
+    tokenService = TokenService(
         db=db,
         background_tasks=background_tasks,
         request=request,
         authorization=authorization
     )
 
-    return accountServices.receive_fcm_token(payload=payload)
+    return tokenService.receive_fcm_token(payload=payload)
 
 
 

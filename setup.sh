@@ -28,13 +28,6 @@ fi
 
 SETUP_MODE="$1"
 
-# ==========================================
-# .env check — existence is the only gate.
-# ==========================================
-
-
-echo -e "${GREEN}✓ .env file found. Proceeding...${NC}"
-echo ""
 
 # ==========================================
 # Docker setup
