@@ -56,7 +56,7 @@ app.add_middleware(
     allow_origins=[
         "https://dting.online",
     ],
-    allow_origin_regex=r"^https://([a-zA-Z0-9-]+\.)*dting\.online$",
+    allow_origin_regex=ENV.ALLOWED_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],  # Allows all methods
     allow_headers=["*"],  # Allows all headers

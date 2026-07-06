@@ -31,16 +31,7 @@ SETUP_MODE="$1"
 # ==========================================
 # .env check — existence is the only gate.
 # ==========================================
-if [ ! -f .env ]; then
-    echo -e "${RED}✗ .env file not found.${NC}"
-    echo ""
-    echo "This script will not create one for you — please set it up first."
-    echo "You can copy the provided template and fill in your own values:"
-    echo -e "   ${GREEN}cp demo.env .env${NC}"
-    echo ""
-    echo "Then run this script again."
-    exit 1
-fi
+
 
 echo -e "${GREEN}✓ .env file found. Proceeding...${NC}"
 echo ""

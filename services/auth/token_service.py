@@ -1,5 +1,5 @@
 import uuid
-from fastapi import HTTPException, Request, BackgroundTasks
+from fastapi import HTTPException, Request, BackgroundTasks, Response, status
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
@@ -90,6 +90,7 @@ class TokenGenerators:
             return None
 
 
+
 class TokenService(TokenGenerators):
     def __init__(
         self,
@@ -111,12 +112,12 @@ class TokenService(TokenGenerators):
             "device_id": device_id,
             "device_uuid": device_uuid,
             "iss": f"auth.{ENV.MAIN_DOMAIN}",
-            "aud": ENV.ALLOWED_AUDIENCES,        # access token -> সব authorized service e valid
+            # "aud": ENV.ALLOWED_AUDIENCES,        # access token -> সব authorized service e valid
             "iat": datetime.utcnow(),
         }
         token, jti = self._create_token(
             payload=payload,
-            expire_min=ENV.ACCESS_EXPIRE
+            expire_min=ENV.ACCESS_EXPIRE_MINUTES
         )
 
         return token
@@ -133,7 +134,7 @@ class TokenService(TokenGenerators):
         }
         token, jti = self._create_token(
             payload=payload,
-            expire_day=ENV.REFRESH_EXPIRE
+            expire_day=ENV.REFRESH_EXPIRE_DAYS
         )
 
         # ---- DB e session record save kora (revoke/rotation er jonno) ----
@@ -143,7 +144,7 @@ class TokenService(TokenGenerators):
         #     device_uuid=device_uuid,
         #     jti=jti,
         #     refresh_token_hash=Hashing.hash(token),   # raw token DB e direct save na kore hash rakha better
-        #     expires_at=datetime.utcnow() + timedelta(days=ENV.REFRESH_EXPIRE),
+        #     expires_at=datetime.utcnow() + timedelta(days=ENV.REFRESH_EXPIRE_DAYS),
         #     is_revoked=False,
         # )
         # self.db.add(session)
@@ -187,6 +188,131 @@ class TokenService(TokenGenerators):
         #     return None  # revoked othoba kothao pawa jay nai
 
         return payload
+
+    # Get a New Access Token Using Refresh Token
+    def refresh_access_token(
+        self,
+        payload: RefreshAccessTokenRequest,
+        response: Response | None = None
+    ) -> GlobalResponse:
+        try:
+            # Step 1: Extract data from payload
+            refresh_token = self.authorization
+
+            if not refresh_token and payload is not None:
+                refresh_token = payload.refresh_token
+
+            if not refresh_token and self.request.cookies.get("refresh_token") is not None:
+                refresh_token = self.request.cookies.get("refresh_token")
+            
+            if refresh_token and refresh_token.lower().startswith("bearer "):
+                refresh_token = refresh_token.split(" ", 1)[1].strip()
+            
+            if not refresh_token:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail=String.INVALID_OR_EXPIRED_TOKEN
+                )
+
+            # Step 2: Decode and validate refresh token
+            token_payload: dict = self.verify_refresh_token(refresh_token)
+
+            if token_payload is None:
+                raise HTTPException(
+                    status_code=401,
+                    detail="Refresh Token Expired"
+                )
+            
+
+            user_id = payload.user_id or token_payload.get("user_id")
+            device_id = payload.device_id or token_payload.get("device_id")
+            device_uuid = payload.device_uuid or token_payload.get("device_uuid")
+            
+            if not user_id or not device_id or not device_uuid:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail=String.INVALID_OR_EXPIRED_TOKEN
+                )
+
+            if token_payload.get("user_id") != user_id:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="User ID mismatch"
+                )
+
+            # Step 3: Verify session
+            session: SessionTable = self.db.query(SessionTable).filter(
+                SessionTable.user_id == user_id,
+                SessionTable.device_id == device_id,
+                SessionTable.device_uuid == device_uuid
+            ).first()
+
+            if (not session):
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=String.SESSION_NOT_FOUND
+                )
+
+            if (not session.is_login or not session.otp_verified):
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail=String.USER_NOT_LOGIN
+                )
+
+
+            # Step 4: Generate new access token
+            access_token, _ = self.create_access_token(
+                user_id=user_id,
+                device_id=device_id,
+                device_uuid=device_uuid
+            )
+
+
+            # Step 5: Update session with new access token hash
+            session: SessionTable = self.db.query(SessionTable).filter(
+                SessionTable.user_id == user_id,
+                SessionTable.device_id == device_id,
+                SessionTable.device_uuid == device_uuid
+            ).first()
+
+            if session:
+                session.access_token_hash = Hashing.create_hash(access_token)
+                self.db.commit()
+                self.db.refresh(session)
+
+            if response is not None:
+                response.set_cookie(
+                    key="access_token",
+                    value=access_token,
+                    httponly=True,
+                    secure=False,
+                    samesite="lax",
+                    domain=None if ENV.DEBUG else f".{ENV.MAIN_DOMAIN}",
+                    max_age=ENV.ACCESS_EXPIRE_MINUTES * 60,
+                    path="/"
+                )
+
+
+            # Return Response
+            return GlobalResponse(
+                status_code=status.HTTP_200_OK,
+                success=True,
+                action="refresh_access_token",
+                message="Access token refreshed successfully",
+                data={
+                    "access_token": access_token
+                },
+                next_step={}
+            )
+
+        except HTTPException:
+            raise
+
+        except Exception as e:
+            self.db.rollback()
+            print(f"{AnsiColor.RED}INFO{AnsiColor.RESET}:     {e}")
+            raise HTTPException(status_code=500, detail=String.SERVER_ERROR)
+    
 
 
 

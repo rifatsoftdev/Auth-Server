@@ -1,3 +1,5 @@
+import re
+
 from fastapi import status, Request, BackgroundTasks, Header, HTTPException
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -8,6 +10,13 @@ from app.constants import AnsiColor
 from app.model import UserTable
 from app.schema import GlobalResponse
 from services.auth.user_verification import UserVerificationService
+
+
+
+ORIGIN_REGEX = re.compile(
+    r"^https://([a-zA-Z0-9-]+\.)*dting\.online$"
+)
+
 
 
 class UserAuthMiddleware(BaseHTTPMiddleware):
@@ -121,10 +130,7 @@ class UserAuthMiddleware(BaseHTTPMiddleware):
 
         origin = request.headers.get("origin")
 
-        if origin in [
-            "http://localhost:4321",
-            "http://192.168.1.100:4321",
-        ]:
+        if origin and ORIGIN_REGEX.fullmatch(origin):
             resp.headers["Access-Control-Allow-Origin"] = origin
             resp.headers["Access-Control-Allow-Credentials"] = "true"
             resp.headers["Vary"] = "Origin"

@@ -14,7 +14,7 @@ MAX_BCRYPT_BYTES = 72
 class Hashing:
     @staticmethod
     def _long_value_hash(value: str) -> str:
-        secret = (ENV.SECRET_KEY or ENV.SALT or "pocketpay").encode("utf-8")
+        secret = (ENV.JWT_SECRET_KEY or ENV.SALT or "pocketpay").encode("utf-8")
         digest = hmac.new(secret, value.encode("utf-8"), hashlib.sha256).hexdigest()
         return f"{LONG_VALUE_HASH_PREFIX}{digest}"
 

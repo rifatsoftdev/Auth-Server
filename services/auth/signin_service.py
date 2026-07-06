@@ -16,7 +16,7 @@ from app.schema import (
 from app.utils import Hashing, Helpers
 
 from services.auth.repository import Repository
-from services.auth.token_service import TokenGenerators
+from services.auth.token_service import TokenService
 from services.auth.signup_service import RegistrationService
 
 from services.notification.notification_services import (
@@ -24,7 +24,7 @@ from services.notification.notification_services import (
 )
 
 
-class SigninService(TokenGenerators, Repository):
+class SigninService(TokenService, Repository):
     def __init__(
         self,
         db: Session,
@@ -180,24 +180,16 @@ class SigninService(TokenGenerators, Repository):
             is_2fa_required = bool(two_factor_method_names)
             
             if not is_2fa_required:
-                payload = {
-                    "token_type": String.ACCESS_TOKEN,
-                    "user_id": user.user_id,
-                    "device_id": device_id,
-                    "device_uuid": device_uuid,
-                    "iss": f"auth.{ENV.MAIN_DOMAIN}",
-                    "aud": ENV.ALLOWED_AUDIENCES,
-                }
-                
-                access_token, _ = self._create_token(
-                    expire_min=ENV.ACCESS_EXPIRE,
-                    payload=payload
+                access_token = self.create_access_token(
+                    user_id=user.user_id,
+                    device_id=device_id,
+                    device_uuid=device_uuid
                 )
 
-                payload["token_type"] = String.REFRESH_TOKEN
-                refresh_token, _ = self._create_token(
-                    expire_day=ENV.REFRESH_EXPIRE,
-                    payload=payload
+                refresh_token = self.create_refresh_token(
+                    user_id=user.user_id,
+                    device_id=device_id,
+                    device_uuid=device_uuid
                 )
             
 
@@ -324,7 +316,7 @@ class SigninService(TokenGenerators, Repository):
                     secure=True,  # production হলে True + HTTPS
                     samesite="lax",
                     domain=ENV.MAIN_DOMAIN,
-                    max_age=ENV.ACCESS_EXPIRE * 60,
+                    max_age=ENV.ACCESS_EXPIRE_MINUTES * 60,
                     path="/"
                 )
                 response.set_cookie(
@@ -350,7 +342,7 @@ class SigninService(TokenGenerators, Repository):
                         "device_id": device_id,
                         "device_uuid": device_uuid,
                         "token_type": "Bearer",
-                        "expires_in": ENV.ACCESS_EXPIRE * 60,   # consistency: ekhane o second e rakha better
+                        "expires_in": ENV.ACCESS_EXPIRE_MINUTES * 60,   # consistency: ekhane o second e rakha better
                         "email_address": user.email_address,
                         "phone_number": f"{user.country_code or ''}{user.phone_number or ''}" or None
                     },
@@ -369,7 +361,7 @@ class SigninService(TokenGenerators, Repository):
                     "access_token": access_token,
                     "refresh_token": refresh_token,
                     "token_type": "bearer",
-                    "expires_in": ENV.ACCESS_EXPIRE,
+                    "expires_in": ENV.ACCESS_EXPIRE_MINUTES,
                     "email_address": user.email_address,
                     "phone_number": f"{user.country_code or ''}{user.phone_number or ''}" or None
                 },

@@ -115,7 +115,7 @@ class AdminManagementServices(UserVerificationService, TokenGenerators):
 
             # Generate tokens
             access_token, _ = self._create_token(
-                expire_min=ENV.ACCESS_EXPIRE,
+                expire_min=ENV.ACCESS_EXPIRE_MINUTES,
                 payload={
                     "token_type": "access",
                     "admin_id": admin.admin_id,
@@ -130,7 +130,7 @@ class AdminManagementServices(UserVerificationService, TokenGenerators):
             )
         
             refresh_token, _ = self._create_token(
-                expire_day=ENV.REFRESH_EXPIRE,
+                expire_day=ENV.REFRESH_EXPIRE_DAYS,
                 payload={
                     "token_type": "refresh",
                     "admin_id": admin.admin_id,
@@ -174,7 +174,7 @@ class AdminManagementServices(UserVerificationService, TokenGenerators):
                 httponly=False,
                 secure=False,
                 samesite="lax",
-                max_age=60 * ENV.ACCESS_EXPIRE
+                max_age=60 * ENV.ACCESS_EXPIRE_MINUTES
             )
             response.set_cookie(
                 key="admin_refresh_token",
@@ -182,7 +182,7 @@ class AdminManagementServices(UserVerificationService, TokenGenerators):
                 httponly=False,
                 secure=False,
                 samesite="lax",
-                max_age=60 * ENV.REFRESH_EXPIRE
+                max_age=60 * ENV.REFRESH_EXPIRE_DAYS
             )
 
             return response
@@ -370,7 +370,7 @@ class AdminManagementServices(UserVerificationService, TokenGenerators):
 
             # Generate new tokens
             access_token, _ = self._create_token(
-                expire_min=ENV.ACCESS_EXPIRE,
+                expire_min=ENV.ACCESS_EXPIRE_MINUTES,
                 payload={
                     "token_type": "access",
                     "admin_id": admin.admin_id,
@@ -385,7 +385,7 @@ class AdminManagementServices(UserVerificationService, TokenGenerators):
             )
 
             new_refresh_token, _ = self._create_token(
-                expire_day=ENV.REFRESH_EXPIRE,
+                expire_day=ENV.REFRESH_EXPIRE_DAYS,
                 payload={
                     "token_type": "refresh",
                     "admin_id": admin.admin_id,
@@ -421,7 +421,7 @@ class AdminManagementServices(UserVerificationService, TokenGenerators):
                 httponly=False,
                 secure=False,
                 samesite="lax",
-                max_age=60 * ENV.ACCESS_EXPIRE
+                max_age=60 * ENV.ACCESS_EXPIRE_MINUTES
             )
             response.set_cookie(
                 key="admin_refresh_token",
@@ -429,7 +429,7 @@ class AdminManagementServices(UserVerificationService, TokenGenerators):
                 httponly=False,
                 secure=False,
                 samesite="lax",
-                max_age=60 * ENV.REFRESH_EXPIRE
+                max_age=60 * ENV.REFRESH_EXPIRE_DAYS
             )
 
             return response

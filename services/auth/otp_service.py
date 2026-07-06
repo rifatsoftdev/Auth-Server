@@ -545,7 +545,7 @@ class OTPService(TokenGenerators):
                 self.db.commit()
 
             access_token, _ = self._create_token(
-                expire_min=ENV.ACCESS_EXPIRE,
+                expire_min=ENV.ACCESS_EXPIRE_MINUTES,
                 payload={
                     "token_type": String.ACCESS_TOKEN,
                     "user_id": user.user_id,
@@ -553,12 +553,12 @@ class OTPService(TokenGenerators):
                     "device_id": device_id,
                     "device_uuid": device_uuid,
                     "iss": f"auth.{ENV.MAIN_DOMAIN}",
-                    "aud": ENV.ALLOWED_AUDIENCES,
+                    # "aud": ENV.ALLOWED_AUDIENCES,
                 }
             )
 
             refresh_token, _ = self._create_token(
-                expire_day=ENV.REFRESH_EXPIRE,
+                expire_day=ENV.REFRESH_EXPIRE_DAYS,
                 payload={
                     "token_type": String.REFRESH_TOKEN,
                     "user_id": user.user_id,
@@ -647,7 +647,7 @@ class OTPService(TokenGenerators):
                     "access_token": access_token,
                     "refresh_token": refresh_token,
                     "token_type": "bearer",
-                    "expires_in": ENV.ACCESS_EXPIRE,
+                    "expires_in": ENV.ACCESS_EXPIRE_MINUTES,
                     "email_address": user.email_address,
                     "phone_number": user.country_code + user.phone_number
                 },

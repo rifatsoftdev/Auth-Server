@@ -19,6 +19,7 @@ from services import (
     RegistrationService,
     PasswordService, AccountServices
 )
+from services.auth.token_service import TokenService
 
 
 
@@ -271,7 +272,7 @@ async def refresh_access_token(
     authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
-    accountServices = AccountServices(
+    accountServices = TokenService(
         db=db,
         background_tasks=background_tasks,
         request=request,
