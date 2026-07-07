@@ -20,8 +20,11 @@ class String:
     INVALID_EMAIL_ADDRESS = "Invalid Email Address"
     INVALID_PHONE_NUMBER = "Invalid Phone Number"
     INVALID_TOKEN_TYPE = "Invalid Token Type"
-    INVALID_OR_EXPIRED_TOKEN = "Invalid or Expired Token"
     INVALID_OTP = "Invalid OTP"
+    INVALID_OR_EXPIRED_TOKEN = "Invalid or Expired Token"
+
+    # Missing Messages
+    MISSING_AUTHENTICATION_TOKEN = "Missing Authentication Token"
 
     # Already Exists Messages
     ADMIN_ALREADY_EXISTS = "Admin Already Exists"

@@ -303,8 +303,9 @@ class SigninService(TokenService, Repository):
                     }
                 )
 
-            
-            if client_type == "web":
+            print(f"{AnsiColor.BLUE}INFO:{AnsiColor.RESET}     Client type: {client_type}")
+            if True or client_type == "web":
+                print(f"{AnsiColor.BLUE}INFO:{AnsiColor.RESET}     Setting cookies for web client. access_token={access_token[0:4]}.., refresh_token={refresh_token[0:4]}..")
                 response.set_cookie(
                     key="access_token",
                     value=access_token,
@@ -324,6 +325,39 @@ class SigninService(TokenService, Repository):
                     domain=ENV.MAIN_DOMAIN,
                     max_age=ENV.REFRESH_EXPIRE_DAYS * 86400, # fix: din -> second e convert kora (1 din = 86400 sec)
                     path="/auth/refresh-access-token"
+                )
+
+                response.set_cookie(
+                    key="user_id",
+                    value=user.user_id,
+                    httponly=False,      # JavaScript access করতে পারবে
+                    secure=True,
+                    samesite="lax",
+                    domain=ENV.MAIN_DOMAIN,
+                    path="/",
+                    max_age=ENV.REFRESH_EXPIRE_DAYS * 86400
+                )
+
+                response.set_cookie(
+                    key="device_id",
+                    value=device_id,
+                    httponly=False,
+                    secure=True,
+                    samesite="lax",
+                    domain=ENV.MAIN_DOMAIN,
+                    path="/",
+                    max_age=ENV.REFRESH_EXPIRE_DAYS * 86400
+                )
+
+                response.set_cookie(
+                    key="device_uuid",
+                    value=device_uuid,
+                    httponly=False,
+                    secure=True,
+                    samesite="lax",
+                    domain=ENV.MAIN_DOMAIN,
+                    path="/",
+                    max_age=ENV.REFRESH_EXPIRE_DAYS * 86400
                 )
 
                 # print(response.headers)

@@ -6,7 +6,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from sqlalchemy.orm import Session
 
 from app.core.database import SessionLocal
-from app.constants import AnsiColor
+from app.constants import AnsiColor, String
 from app.model import UserTable
 from app.schema import GlobalResponse
 from services.auth.user_verification import UserVerificationService
@@ -36,6 +36,8 @@ class UserAuthMiddleware(BaseHTTPMiddleware):
         # Step 1: Client type detect - just for logging/analytics
         client_type = request.headers.get("X-Client-Type")
         ua = request.headers.get("user-agent", "").lower()
+
+        # print("Access token from cookie:", request.cookies.get("access_token"))
 
         if not client_type:
             if "okhttp" in ua or "dart" in ua:
@@ -68,7 +70,7 @@ class UserAuthMiddleware(BaseHTTPMiddleware):
         if authorization and authorization.lower().startswith("bearer "):
             access_token = authorization.split(" ", 1)[1].strip()
 
-
+        
         # Priority 2: Cookie - shudhu web er jonno fallback
         if not access_token and client_type == "web":
             access_token = request.cookies.get("access_token")
@@ -80,7 +82,7 @@ class UserAuthMiddleware(BaseHTTPMiddleware):
         
         if not access_token:
             print(f"{AnsiColor.BLUE}INFO:{AnsiColor.RESET}     Missing token. client={client_type} path={request.url.path}")
-            return self._unauthorized(request, "Missing authentication token")
+            return self._unauthorized(request, String.MISSING_AUTHENTICATION_TOKEN)
 
         # 4. Token verify koro
         db: Session = SessionLocal()
@@ -100,7 +102,7 @@ class UserAuthMiddleware(BaseHTTPMiddleware):
             
         except Exception as exc:
             status_code = getattr(exc, "status_code", status.HTTP_401_UNAUTHORIZED)
-            detail = getattr(exc, "detail", "Invalid or Expired Token")
+            detail = getattr(exc, "detail", String.INVALID_OR_EXPIRED_TOKEN)
             return self._unauthorized(request, detail, status_code=status_code)
         finally:
             pass

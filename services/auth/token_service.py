@@ -158,7 +158,7 @@ class TokenService(TokenGenerators):
         payload = self._decode_token(
             token,
             audience=f"api.auth{ENV.MAIN_DOMAIN}",
-            issuer=f"api.auth{ENV.MAIN_DOMAIN}" if ENV.DEBUG else None,
+            issuer=f"api.auth{ENV.MAIN_DOMAIN}",
         )
 
         if not payload or payload.get("token_type") != "refresh":
@@ -178,13 +178,13 @@ class TokenService(TokenGenerators):
 
             if not refresh_token and payload is not None:
                 refresh_token = payload.refresh_token
-
+            # print("Refresh token from cookie:", self.request.cookies.get("refresh_token"))
             if not refresh_token and self.request.cookies.get("refresh_token") is not None:
                 refresh_token = self.request.cookies.get("refresh_token")
             
             if refresh_token and refresh_token.lower().startswith("bearer "):
                 refresh_token = refresh_token.split(" ", 1)[1].strip()
-            
+
             if not refresh_token:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
@@ -193,17 +193,21 @@ class TokenService(TokenGenerators):
 
             # Step 2: Decode and validate refresh token
             token_payload: dict = self.verify_refresh_token(refresh_token)
-
+            # print(token_payload)
             if token_payload is None:
                 raise HTTPException(
                     status_code=401,
                     detail="Refresh Token Expired"
                 )
             
-
-            user_id = payload.user_id or token_payload.get("user_id")
-            device_id = payload.device_id or token_payload.get("device_id")
-            device_uuid = payload.device_uuid or token_payload.get("device_uuid")
+            if payload is not None:
+                user_id: str = payload.user_id
+                device_id: str = payload.device_id
+                device_uuid: str = payload.device_uuid
+            else:
+                user_id: str = token_payload.get("user_id")
+                device_id: str = token_payload.get("device_id")
+                device_uuid: str = token_payload.get("device_uuid")
             
             if not user_id or not device_id or not device_uuid:
                 raise HTTPException(
@@ -264,7 +268,7 @@ class TokenService(TokenGenerators):
                     httponly=True,
                     secure=False,
                     samesite="lax",
-                    domain=None if ENV.DEBUG else f".{ENV.MAIN_DOMAIN}",
+                    domain=ENV.MAIN_DOMAIN,
                     max_age=ENV.ACCESS_EXPIRE_MINUTES * 60,
                     path="/"
                 )

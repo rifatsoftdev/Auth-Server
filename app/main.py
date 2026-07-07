@@ -131,7 +131,7 @@ def startup_event():
 @app.on_event("shutdown")
 def shutdown_event():
     exit_code = 1
-    # exit_code = os.system("find . -type d -name \"__pycache__\" -exec rm -rf {} +")
+    exit_code = os.system("find . -type d -name \"__pycache__\" -exec rm -rf {} +")
     print(f"{AnsiColor.BLUE}INFO:{AnsiColor.RESET}     Shutting down application... Cleaning up resources exit code {exit_code}")
 
 
